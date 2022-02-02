@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import './view/register.dart';
 import './view/top.dart';
 import './view/chat.dart';
+import './view/room_id.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
         routes: {
           'top': (context) => const Top(),
           'register': (context) => const Register(),
+          'room_id': (context) => const RoomID(),
           'chat': (context) => const Chat()
         });
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Register extends StatefulWidget {
   const Register({Key? key}) : super(key: key);
@@ -13,6 +14,8 @@ class RegisterState extends State<Register> {
   String newUserEmail = "";
   // 入力されたパスワード
   String newUserPassword = "";
+  // 入力されたパスワード
+  String newUserName = "";
   // 登録に関する情報を表示
   String infoText = "";
 
@@ -24,6 +27,15 @@ class RegisterState extends State<Register> {
           padding: const EdgeInsets.all(32),
           child: Column(
             children: <Widget>[
+              TextFormField(
+                // テキスト入力のラベルを設定
+                decoration: const InputDecoration(labelText: "ユーザー名"),
+                onChanged: (String value) {
+                  setState(() {
+                    newUserName = value;
+                  });
+                },
+              ),
               TextFormField(
                 // テキスト入力のラベルを設定
                 decoration: const InputDecoration(labelText: "メールアドレス"),
@@ -55,7 +67,15 @@ class RegisterState extends State<Register> {
                       password: newUserPassword,
                     );
 
-                    Navigator.pushNamed(context, 'chat');
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(newUserEmail)
+                        .set({
+                      'image': '',
+                      'name': newUserName,
+                    });
+
+                    Navigator.pushNamed(context, 'room_id');
 
                   } catch (e) {
                     // 登録に失敗した場合

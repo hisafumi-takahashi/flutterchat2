@@ -54,7 +54,7 @@ class TopState extends State<Top> {
                       password: loginUserPassword,
                     );
 
-                    Navigator.pushNamed(context, 'chat');
+                    Navigator.pushNamed(context, 'room_id');
 
                   } catch (e) {
                     // ログインに失敗した場合
