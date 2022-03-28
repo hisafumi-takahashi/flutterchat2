@@ -38,6 +38,7 @@ class RoomIDState extends State<RoomID> {
           padding: const EdgeInsets.all(32),
           child: Column(
             children: <Widget>[
+              Text(infoText),
               TextFormField(
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -51,8 +52,6 @@ class RoomIDState extends State<RoomID> {
                   });
                 },
               ),
-              const SizedBox(height: 10),
-              const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
                   if (newRoomID.length != 4) {
@@ -81,8 +80,12 @@ class RoomIDState extends State<RoomID> {
                 },
                 child: const Text("ルームに入る"),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 30),
+              const Text('もしくは'),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.green
+                ),
                 onPressed: () async{
                   var randomRoomID = createRandomIDString();
                   await _db.collection('rooms').doc(randomRoomID).get().then((DocumentSnapshot<Map<String, dynamic>> value) async {
@@ -99,8 +102,7 @@ class RoomIDState extends State<RoomID> {
                   });
                 },
                 child: const Text("ルームを作る"),
-              ),
-              Text(infoText)
+              )
             ],
           ),
         ),

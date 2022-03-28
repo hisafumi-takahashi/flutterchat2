@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "flutter-chat-application-64855"
+  },
+  "targets": {
+    "flutter-chat-application-64855": {
+      "hosting": {
+        "takahashi": [
+          "takahashi"
+        ]
+      }
+    }
+  }
+}

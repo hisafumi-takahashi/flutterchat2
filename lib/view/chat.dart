@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:cached_network_image/cached_network_image.dart';
 
 final _db = FirebaseFirestore.instance;
 final _auth = FirebaseAuth.instance;
+final storage = firebase_storage.FirebaseStorage.instance;
 User? _user;
 String roomID = '';
 
@@ -18,7 +21,7 @@ class Chat extends StatefulWidget {
 
 class _ChatState extends State<Chat> {
   final messageTextController = TextEditingController();
-  String? messageText;
+  String messageText='';
 
   @override
   void initState() {
@@ -57,7 +60,7 @@ class _ChatState extends State<Chat> {
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
                                 vertical: 10.0, horizontal: 20.0),
-                            hintText: 'Type your message ...',
+                            hintText: 'メッセージを入力...',
                             border: InputBorder.none,
                           ),
                         ),
@@ -73,7 +76,7 @@ class _ChatState extends State<Chat> {
                           });
                         },
                         child: const Text(
-                          'Send',
+                          '送信',
                           style: TextStyle(
                             color: Colors.lightBlueAccent,
                             fontWeight: FontWeight.bold,
@@ -92,7 +95,7 @@ class MessageStream extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder <List<MessageInfo>>(
+    return StreamBuilder <List<BaseMessageInfo>>(
       stream: _db
           .collection('rooms').doc(roomID).collection('messages')
           .orderBy('time', descending: true)
@@ -108,26 +111,38 @@ class MessageStream extends StatelessWidget {
           );
         }
         //final messages = snapshot.data!.docs;
-        List<MessageLine> messageLines = [];
+        List<StatelessWidget> Lines = [];
         //for (var message in messages) {
         snapshot.data!.forEach((element){
-          final messageText = element.message;
-          final messageSender = element.name;
+          if(element is TextMessageInfo){
+            final messageText = element.message;
+            final messageSender = element.sender;
 
-          final messageLine = MessageLine(
-            text: messageText,
-            sender: messageSender,
-            isMine: _user!.email == messageSender,
-          );
+            final messageLine = MessageLine(
+              text: messageText,
+              name: element.name,
+              isMine: _user!.email == messageSender,
+            );
+            Lines.add(messageLine);
+          }else if(element is ImageMessageInfo){
+            final image = element.image;
+            final messageSender = element.sender;
 
-          messageLines.add(messageLine);
+            final messageLine = ImageLine(
+              image: image,
+              name: element.name,
+              isMine: _user!.email == messageSender,
+            );
+            Lines.add(messageLine);
+          }
+
         });
         return Expanded(
             child: ListView(
               reverse: true,
               padding: const EdgeInsets.symmetric(
                   horizontal: 10.0, vertical: 20.0),
-              children: messageLines,
+              children: Lines,
             ));
       },
     );
@@ -135,17 +150,17 @@ class MessageStream extends StatelessWidget {
 }
 
 class MessageLine extends StatelessWidget {
-  final String sender;
+  final String name;
   final String text;
   final bool isMine;
 
   const MessageLine(
-      {Key? key, required this.sender, required this.text, required this.isMine})
+      {Key? key, required this.name, required this.text, required this.isMine})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    while(sender==''){}
+    while(name==''){}
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -153,7 +168,7 @@ class MessageLine extends StatelessWidget {
         isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            sender,
+            name,
             style: const TextStyle(
               fontSize: 12.0,
             ),
@@ -190,21 +205,85 @@ class MessageLine extends StatelessWidget {
   }
 }
 
-class MessageInfo {
+class ImageLine extends StatelessWidget {
+  final String name;
+  final Image image;
+  final bool isMine;
+
+  const ImageLine(
+      {Key? key, required this.name, required this.image, required this.isMine})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    while(name==''){}
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment:
+        isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 12.0,
+            ),
+          ),
+          Material(
+            borderRadius: isMine
+                ? const BorderRadius.only(
+              topLeft: Radius.circular(30.0),
+              bottomLeft: Radius.circular(30.0),
+              bottomRight: Radius.circular(30.0),
+            )
+                : const BorderRadius.only(
+              bottomLeft: Radius.circular(30.0),
+              bottomRight: Radius.circular(30.0),
+              topRight: Radius.circular(30.0),
+            ),
+            elevation: 5.0,
+            color: isMine ? Colors.lightBlueAccent : Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  vertical: 10.0, horizontal: 20.0),
+              child: Row(
+                children: [
+                  image,
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BaseMessageInfo {
   late String sender;
   late String name;
-  late String message;
   late Timestamp time;
 
-  MessageInfo(sender, name, message, time) {
+  BaseMessageInfo(sender, name, time) {
     this.sender = sender;
     this.name = name;
-    this.message = message;
     this.time = time;
   }
 }
 
-Stream<List<MessageInfo>> messagesStream(roomId) {
+class TextMessageInfo extends BaseMessageInfo{
+  late String message='';
+
+  TextMessageInfo(sender, name, message, time) : super(sender,name,time);
+}
+
+class ImageMessageInfo extends BaseMessageInfo{
+  late Image image;
+
+  ImageMessageInfo(sender, name, image, time) :super(sender,name,time);
+}
+
+Stream<List<BaseMessageInfo>> messagesStream(roomId) {
   return _db
       .collection('rooms')
       .doc(roomId)
@@ -214,9 +293,25 @@ Stream<List<MessageInfo>> messagesStream(roomId) {
       .asyncMap((messages) => Future.wait([for (var message in messages.docs) generateMessageInfo(message)]));
 }
 
-Future<MessageInfo> generateMessageInfo(QueryDocumentSnapshot message) async {
-  var name = await getUserData(message.get('sender'));
-  return MessageInfo(message.get('sender'),name,message.get('message'),message.get('time'));
+Future<BaseMessageInfo> generateMessageInfo(QueryDocumentSnapshot message) async {
+  var doc = await _db.collection('users').doc(message.get('sender')).get();
+  var name = await doc.get('name');
+  var isImage=false;
+
+  if(doc.data()?.containsKey('isImage') ?? false){
+    isImage = await doc.get('isImage');
+  }
+
+  if(isImage){
+    firebase_storage.Reference ref = firebase_storage.FirebaseStorage.instance
+        .ref('images/1111/KZfDwzUJQ472TpsQjfJ9.jpeg');
+    final String url = await ref.getDownloadURL();
+    final image = new Image(image: new CachedNetworkImageProvider(url));
+    return ImageMessageInfo(message.get('sender'),name,image,message.get('time'));
+  }else{
+    return TextMessageInfo(message.get('sender'),name,message.get('message'),message.get('time'));
+  }
+
 }
 
 Future<String> getUserData(nowSender) async {

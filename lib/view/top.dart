@@ -25,6 +25,7 @@ class TopState extends State<Top> {
           padding: const EdgeInsets.all(32),
           child: Column(
             children: <Widget>[
+              Text(infoText),
               TextFormField(
                 decoration: const InputDecoration(labelText: "メールアドレス"),
                 onChanged: (String value) {
@@ -65,14 +66,17 @@ class TopState extends State<Top> {
                 },
                 child: const Text("ログイン"),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 30),
+              const Text('もしくは'),
               ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      primary: Colors.green
+                  ),
                 onPressed: () {
                   Navigator.pushNamed(context, 'register');
                 },
                 child: const Text("新規登録"),
               ),
-              Text(infoText),
             ],
           ),
         ),
