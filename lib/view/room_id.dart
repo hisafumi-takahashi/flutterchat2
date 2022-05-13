@@ -73,7 +73,7 @@ class RoomIDState extends State<RoomID> {
                           arguments: {'RoomID': newRoomID});
                     } else {
                       setState(() {
-                        infoText = "ルームが存在しません";
+                        infoText = "そのルームは存在しません";
                       });
                     }
                   }
